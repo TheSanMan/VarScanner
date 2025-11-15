@@ -1,0 +1,56 @@
+# --- Python basics ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Editors / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# --- Project-specific ---
+
+# Environment / secrets
+.env
+.env.*
+
+# Cache + local DBs for annotation
+data/cache/
+data/*.sqlite
+data/*.db
+
+# Models: ignore large binaries, keep config/spec files
+models/*.joblib
+models/*.pkl
+models/*.sav
+!models/*.json   # keep things like feature_spec.json under version control
+
+# Logs
+logs/
+*.log
