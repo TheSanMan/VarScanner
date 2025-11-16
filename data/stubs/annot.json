@@ -1,0 +1,5 @@
+{
+  "1:1000123:G>A":   {"gene":"GENE1","consequence":"synonymous","gnomad_af":0.0321,"rsid":"rs111111","clinvar": null},
+  "7:55249071:C>T":  {"gene":"GENE2","consequence":"missense","gnomad_af":0.00005,"rsid":"rs222222","clinvar": null},
+  "17:43071077:T>TA":{"gene":"GENE3","consequence":"frameshift","gnomad_af":0.0,"rsid":null,"clinvar": null}
+}
