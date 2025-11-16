@@ -11,10 +11,17 @@ Version: 0.0.1
 
 from typing import List, Optional
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pathlib import Path
 import json
 
+class PredictionOut(BaseModel):
+  prob_pathogenic: float
+  class_: str = Field(alias="class")
+
+class ExplanationItem(BaseModel):
+  feature: str
+  shap_value: float
 
 class VariantIn(BaseModel):
   """
@@ -27,16 +34,6 @@ class VariantIn(BaseModel):
   pos: int    # Genomic position (1-based coordinate)
   ref: str    # Reference allele sequence
   alt: str    # Alternate (variant) allele sequence
-  
-class PredictRequest(BaseModel):
-  """
-  Request model for variant prediction/annotation.
-  
-  Contains a list of variants to be annotated along with the reference genome
-  build used for interpretation (e.g., "GRCh37", "GRCh38").
-  """
-  genome_build: str              # Reference genome build identifier
-  variants: List[VariantIn]      # List of variants to annotate
 
 class VariantResult(BaseModel):
   """
@@ -53,6 +50,19 @@ class VariantResult(BaseModel):
   gnomad_af: Optional[float] = None   # Allele frequency in gnomAD population database
   rsid: Optional[str] = None          # dbSNP reference SNP identifier
   clinvar: Optional[str] = None       # Clinical significance from ClinVar
+  prediction: PredictionOut
+  explanation: List[ExplanationItem]
+
+class PredictRequest(BaseModel):
+  """
+  Request model for variant prediction/annotation.
+  
+  Contains a list of variants to be annotated along with the reference genome
+  build used for interpretation (e.g., "GRCh37", "GRCh38").
+  """
+  genome_build: str              # Reference genome build identifier
+  variants: List[VariantIn]      # List of variants to annotate
+
 
 class PredictResponse(BaseModel):
   """
@@ -63,6 +73,11 @@ class PredictResponse(BaseModel):
   """
   genome_build: str           # Reference genome build used for interpretation
   results: List[VariantResult]  # Annotated results for each input variant
+
+
+
+
+
 
 # ============================================================================
 # Module-level data initialization
@@ -86,6 +101,42 @@ def variant_key(v: VariantIn) -> str:
       str: Standardized variant key string (e.g., "1:12345:A>T")
   """
   return f"{v.chrom}:{str(v.pos)}:{v.ref}>{v.alt}"
+
+def rule_based_prediction(
+    consequence: Optional[str],
+    af: Optional[float]
+) -> tuple[PredictionOut, List[ExplanationItem]]:
+  
+  af_val = af if af is not None else 0.0
+
+
+  if consequence == "frameshift":
+    prob = 0.9
+  elif consequence == "missense":
+    prob = 0.6
+  elif consequence == "synonymous":
+    prob = 0.05
+  else:
+    prob = 0.5
+  
+  prob = min(prob, 0.2) if af_val >= 0.01 else prob
+
+  klass = "Pathogenic" if prob >= 0.5 else "Benign"
+
+  prediction = PredictionOut(
+    prob_pathogenic=prob,
+    class_=klass
+  )
+
+  explanation = [
+    ExplanationItem(
+      feature=f"consequence_{consequence or 'unknown'}",
+      shap_value=0.0
+    )
+  ]
+
+  return prediction, explanation
+
 
 # ============================================================================
 # FastAPI application setup
@@ -165,3 +216,5 @@ def predict(req: PredictRequest) -> PredictResponse:
     genome_build = req.genome_build,
     results = results
   )
+
+
